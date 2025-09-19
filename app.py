@@ -1,1 +1,6 @@
-print("hello world")
+import socket
+
+hostname = socket.gethostname()
+print(f"Hostname: {hostname}")
+
+print("Hola")
