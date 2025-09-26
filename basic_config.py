@@ -3,13 +3,7 @@ import time
 import pandas as pd
 import re
 
-# ========= FUNCIONES =========
-
 def leer_todo(ser, espera=2.0):
-    """
-    Lee la salida disponible del puerto serial.
-    Envía espacio si aparece '--More--' para continuar paginación.
-    """
     time.sleep(espera)
     salida = ""
     while True:
@@ -20,22 +14,19 @@ def leer_todo(ser, espera=2.0):
         if "--More--" in chunk:
             ser.write(b" ")
             time.sleep(0.3)
-    # también intenta vaciar lo que quede en el buffer
     if ser.in_waiting:
         salida += ser.read(ser.in_waiting).decode(errors="ignore")
     return salida
 
 def obtener_modelo_serie(ser):
-    """Ejecuta 'show inventory' y extrae modelo (PID) y serie (SN)."""
-    ser.write(b"\n")               # "despertar" consola
+    ser.write(b"\n")               
     time.sleep(0.5)
-    ser.write(b"terminal length 0\n")  # sin paginación si aplica
+    ser.write(b"terminal length 0\n") 
     time.sleep(0.5)
 
     ser.write(b"show inventory\n")
     salida = leer_todo(ser, espera=2.0)
 
-    # Regex un poco más tolerantes (insensibles a may/minus)
     m_modelo = re.search(r"PID:\s*([\w\-/\.]+)", salida, re.IGNORECASE)
     m_serie  = re.search(r"SN:\s*([\w\-]+)", salida, re.IGNORECASE)
 
@@ -45,7 +36,6 @@ def obtener_modelo_serie(ser):
     return modelo, serie, salida
 
 def configurar_dispositivo(ser, nombre, usuario, contrasena, dominio):
-    """Envía comandos de configuración al dispositivo."""
     comandos = [
         "configure terminal",
         f"hostname {nombre}",
@@ -57,7 +47,6 @@ def configurar_dispositivo(ser, nombre, usuario, contrasena, dominio):
         ser.write((cmd + "\n").encode())
         time.sleep(1)
 
-    # Tamaño de clave si lo pide
     ser.write(b"1024\n")
     time.sleep(2)
 
@@ -76,12 +65,9 @@ def configurar_dispositivo(ser, nombre, usuario, contrasena, dominio):
         ser.write((cmd + "\n").encode())
         time.sleep(0.7)
 
-    print(f"✅ Configuración aplicada a {nombre}")
+    print(f" Configuración aplicada a {nombre}")
 
 def cargar_y_configurar():
-    """Lee el Excel y configura el dispositivo si hay coincidencia."""
-    # Asegúrate de tener openpyxl instalado para leer .xlsx:
-    #   pip install openpyxl pyserial
     ruta_excel = r"C:\Users\52675\Desktop\dispositivos_ejemplo Alejandro.xlsx"
     df = pd.read_excel(ruta_excel)
 
@@ -94,17 +80,17 @@ def cargar_y_configurar():
         baudios  = int(fila["baudios"])
 
         try:
-            print(f"\n🔌 Conectando al puerto {puerto}...")
+            print(f"\n Conectando al {puerto}...")
             ser = serial.Serial(puerto, baudios, timeout=2)
             time.sleep(2)
 
             modelo_real, serie_real, salida = obtener_modelo_serie(ser)
-            print(f"📋 Modelo detectado: {modelo_real}, Serie: {serie_real}")
+            print(f" Modelo detectado: {modelo_real}, Serie: {serie_real}")
 
             if (modelo_real and serie_real and
                 modelo_real == str(fila["modelo"]) and
                 serie_real  == str(fila["serie"])):
-                print("✅ Coincidencia encontrada en Excel, configurando...")
+                print(" Coincidencia , configurando...")
                 configurar_dispositivo(
                     ser,
                     str(fila["nombre"]),
@@ -113,15 +99,13 @@ def cargar_y_configurar():
                     str(fila["dominio"])
                 )
             else:
-                print("⚠️ No coincide con el Excel, se omite configuración.")
+                print(" No coincide ,  no se configuración.")
                 print("Salida completa de 'show inventory':\n", salida)
 
             ser.close()
 
         except Exception as e:
-            print(f"❌ Error en {puerto}: {e}")
-
-# ========= MAIN CORREGIDO =========
+            print(f" Error en {puerto}: {e}")
 
 if __name__ == "__main__":
     cargar_y_configurar()
