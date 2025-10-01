@@ -35,13 +35,14 @@ def obtener_modelo_serie(ser):
 
     return modelo, serie, salida
 
-def configurar_dispositivo(ser, nombre, usuario, contrasena, dominio):
+def configurar_router(ser, nombre, usuario, contrasena, dominio):
     comandos = [
         "configure terminal",
         f"hostname {nombre}",
         f"username {usuario} password {contrasena}",
         f"ip domain-name {dominio}",
-        "crypto key generate rsa",
+        "crypto key generate rsa modulus 1024"
+        ,
     ]
     for cmd in comandos:
         ser.write((cmd + "\n").encode())
@@ -67,7 +68,7 @@ def configurar_dispositivo(ser, nombre, usuario, contrasena, dominio):
 
     print(f" Configuración aplicada a {nombre}")
 
-def cargar_y_configurar():
+def buscar_y_conf():
     ruta_excel = r"C:\Users\52675\Desktop\dispositivos_ejemplo Alejandro.xlsx"
     df = pd.read_excel(ruta_excel)
 
@@ -80,18 +81,18 @@ def cargar_y_configurar():
         baudios  = int(fila["baudios"])
 
         try:
-            print(f"\n Conectando al {puerto}...")
+            print(f"\n Inicindo conexion en {puerto}...")
             ser = serial.Serial(puerto, baudios, timeout=2)
             time.sleep(2)
 
             modelo_real, serie_real, salida = obtener_modelo_serie(ser)
-            print(f" Modelo detectado: {modelo_real}, Serie: {serie_real}")
+            print(f" Modelo Encontrado: {modelo_real}, Serie: {serie_real}")
 
             if (modelo_real and serie_real and
                 modelo_real == str(fila["modelo"]) and
                 serie_real  == str(fila["serie"])):
-                print(" Coincidencia , configurando...")
-                configurar_dispositivo(
+                print(" Bingo, configurando...")
+                configurar_router(
                     ser,
                     str(fila["nombre"]),
                     str(fila["usuario"]),
@@ -99,7 +100,7 @@ def cargar_y_configurar():
                     str(fila["dominio"])
                 )
             else:
-                print(" No coincide ,  no se configuración.")
+                print(" No se encontro ,  no se configura.")
                 print("Salida completa de 'show inventory':\n", salida)
 
             ser.close()
@@ -108,4 +109,5 @@ def cargar_y_configurar():
             print(f" Error en {puerto}: {e}")
 
 if __name__ == "__main__":
-    cargar_y_configurar()
+    buscar_y_conf()
+
